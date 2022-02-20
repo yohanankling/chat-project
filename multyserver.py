@@ -60,6 +60,11 @@ def filesList(i):
         i.send(file)
 
 def kick(i):
+
+
+    # not muhan
+
+
     msg = "exit"
     msg = msg.encode()
     i.send(msg)
