@@ -32,6 +32,9 @@ t.start()
 while True:
       try:
             data = s.recv(1024).decode()
+
+            #not muhan
+
             if data == "exit":
                   s.close()
             else:
