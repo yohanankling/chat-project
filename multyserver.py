@@ -1,8 +1,10 @@
 import socket
 import select
+import os
 
 server = socket.socket()
 port = 55000
+buffer = 1024
 server.bind(('', port))
 server.listen(15)
 inputs = [server]
@@ -11,11 +13,11 @@ files = ("mygif.gif", "text.txt", "photo.jpg")
 print("ready to serve...")
 
 def welcome(client):
-    name = client.recv(1024)
+    name = client.recv(buffer)
     name = name.decode('UTF-8')
     users = [n.getpeername() for n in inputs if n is not client and n is not server]
     if len(users) < 1:
-        greetMsg = name + ", you are the first client and no one online yet..so...how you doing?"
+        greetMsg = name + ", you are the first client so...how you doing?"
         client.send(greetMsg.encode())
     else:
         onlineList(client)
@@ -28,7 +30,7 @@ def onlineList(i):
     i.send(msg)
     data = names.items()
     for name in data:
-        name = (name[1]+ "\n").encode()
+        name = (name[1] + "\n").encode()
         i.send(name)
 
 def getClient(name):
@@ -59,19 +61,48 @@ def filesList(i):
         file = (file + "\n").encode()
         i.send(file)
 
+def download(i, file):
+    if file not in files:
+        msg = "no such a file in the server!"
+        msg = msg.encode()
+        i.send(msg)
+        print("no such a file!")
+    else:
+        print(f"sending {file} to {nickname}")
+        msg = "-sending-"
+        msg = msg.encode()
+        i.send(msg)
+        msg = file + "-copy"
+        msg = msg.encode()
+        i.send(msg)
+        size = os.path.getsize(file)
+        i.send(str(size).encode())
+        with open(file, 'rb') as fs:
+            data = fs.read(buffer)
+            i.send(data)
+            sent = len(data)
+            while sent < size:
+                data = fs.read(buffer)
+                i.send(data)
+                sent = sent + len(data)
+        print("file sent!")
+
 def kick(i):
-
-
-    # not muhan
-
-
-    msg = "exit"
+    msg = "-exit-"
     msg = msg.encode()
     i.send(msg)
     id = i.getpeername()[1]
     del names[id]
     inputs.remove(i)
-    print(f"client {nickname} has left the chat ")
+    print(f"client {nickname} has left the chat, port {id} free now ")
+    broadcast(f"{nickname} has left the chat".encode(), [server])
+    i.close()
+
+def gentlyKick(i):
+    id = i.getpeername()[1]
+    del names[id]
+    inputs.remove(i)
+    print(f"client {nickname} has left the chat, port {id} free now ")
     broadcast(f"{nickname} has left the chat".encode(), [server])
     i.close()
 
@@ -90,7 +121,7 @@ while inputs:
             id = i.getpeername()[1]
             nickname = names[id]
             try:
-                data = i.recv(1024)
+                data = i.recv(buffer)
                 data = data.decode('UTF-8')
                 try:
                     command, message = data.split(',', 1)
@@ -103,6 +134,8 @@ while inputs:
                     onlineList(i)
                 elif command == "files":
                     filesList(i)
+                elif command == "download":
+                    download(i, message)
                 elif command == "exit":
                     kick(i)
                 else:
@@ -115,4 +148,7 @@ while inputs:
                         chatWith(data, port)
 
             except Exception as e:
-                kick(i)
+                try:
+                    gentlyKick(i)
+                except:
+                    pass
