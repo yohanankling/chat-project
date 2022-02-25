@@ -2,14 +2,19 @@ import socket
 import threading
 import os
 buffer = 1024
+ip = input("enter server IP: or press enter for locall ip")
 name = input("enter your nickname please:")
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 host_name = socket.gethostname()
-ip = socket.gethostbyname(host_name)
+if ip =="":
+      ip = socket.gethostbyname(host_name)
 port = 55001
+print(ip)
 for i in range(14):
       try:
             s.bind(("", port))
+            udp.bind("", port)
             break
       except:
             port = port + 1
@@ -31,25 +36,55 @@ def send():
 t = threading.Thread(target=send)
 t.start()
 
+#
+# def files():
+#       print("download request accepted")
+#       filename = s.recv(buffer).decode()
+#       size = s.recv(buffer).decode()
+#       size = 80
+#       print("starting downloading...")
+#       if os.path.exists(filename):
+#             os.remove(filename)
+#       with open(filename, 'wb') as fw:
+#             recived = 0
+#             print(1)
+#             while recived < size:
+#                   print(2)
+#                   data = s.recv(buffer)
+#                   fw.write(data)
+#                   recived = recived + len(data)
+#       fw.close()
+#       print("the file was successfully downloaded.")
+
+
+
+
+
+# def files():
+#       print("download request accepted")
+#       filename = s.recv(buffer).decode()
+#       # size = s.recv(buffer).decode()
+#       size = 80
+#       print("starting downloading...")
+#       if os.path.exists(filename):
+#             os.remove(filename)
+#       with open(filename, 'wb') as fw:
+#             recived = 0
+#             while recived < size:
+#                   data = udp.recvfrom(buffer)
+#                   fw.write(data)
+#                   recived = recived + len(data)
+#       fw.close()
+#       print("the file was successfully downloaded.")
 
 def files():
-      print("download request accepted")
       filename = s.recv(buffer).decode()
       size = s.recv(buffer).decode()
-      size = 80
-      print("starting downloading...")
-      if os.path.exists(filename):
-            os.remove(filename)
-      with open(filename, 'wb') as fw:
-            recived = 0
-            print(1)
-            while recived < size:
-                  print(2)
-                  data = s.recv(buffer)
-                  fw.write(data)
-                  recived = recived + len(data)
-      fw.close()
-      print("the file was successfully downloaded.")
+      print(1)
+      msg = udp.recvfrom(buffer)
+      print(2)
+      print(msg)
+
 
 while True:
       try:
