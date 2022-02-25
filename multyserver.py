@@ -5,6 +5,8 @@ import os
 server = socket.socket()
 port = 55000
 buffer = 1024
+udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+udp.bind(('', port))
 server.bind(('', port))
 server.listen(15)
 inputs = [server]
@@ -47,10 +49,10 @@ def broadcast(msg, non_receptors):
 def chatWith (msg, port):
     for connection in inputs:
         try:
-            connection.getpeername()[1]
+            connection.getpeername()
         except:
             continue
-        if connection.getpeername()[1] == port:
+        if connection.getpeername() == port:
             connection.send(msg)
 
 def filesList(i):
@@ -60,6 +62,59 @@ def filesList(i):
     for file in files:
         file = (file + "\n").encode()
         i.send(file)
+
+# def download(i, file):
+#     if file not in files:
+#         msg = "no such a file in the server!"
+#         msg = msg.encode()
+#         i.send(msg)
+#         print("no such a file!")
+#     else:
+#         print(f"sending {file} to {nickname}")
+#         msg = "-sending-"
+#         msg = msg.encode()
+#         i.send(msg)
+#         msg = file + "-copy"
+#         msg = msg.encode()
+#         i.send(msg)
+#         size = os.path.getsize(file)
+#         i.send(str(size).encode())
+#         with open(file, 'rb') as fs:
+#             data = fs.read(buffer)
+#             i.send(data)
+#             sent = len(data)
+#             while sent < size:
+#                 data = fs.read(buffer)
+#                 i.send(data)
+#                 sent = sent + len(data)
+#         print("file sent!")
+
+
+# def download(i, file):
+#     if file not in files:
+#         msg = "no such a file in the server!"
+#         msg = msg.encode()
+#         i.send(msg)
+#         print("no such a file!")
+#     else:
+#         print(f"sending {file} to {nickname}")
+#         msg = "-sending-"
+#         msg = msg.encode()
+#         i.send(msg)
+#         msg = file + "-copy"
+#         msg = msg.encode()
+#         i.send(msg)
+#         size = os.path.getsize(file)
+#         i.send(str(size).encode())
+#         with open(file, 'rb') as fs:
+#             data = fs.read(buffer)
+#             udp.sendto(data, i)
+#             sent = len(data)
+#             while sent < size:
+#                 data = fs.read(buffer)
+#                 udp.sendto(data, i)
+#                 sent = sent + len(data)
+#         print("file sent!")
 
 def download(i, file):
     if file not in files:
@@ -72,26 +127,25 @@ def download(i, file):
         msg = "-sending-"
         msg = msg.encode()
         i.send(msg)
-        msg = file + "-copy"
+        msg = "file from the server-" + file
         msg = msg.encode()
         i.send(msg)
         size = os.path.getsize(file)
-        i.send(str(size).encode())
-        with open(file, 'rb') as fs:
-            data = fs.read(buffer)
-            i.send(data)
-            sent = len(data)
-            while sent < size:
-                data = fs.read(buffer)
-                i.send(data)
-                sent = sent + len(data)
-        print("file sent!")
+        size = str(size).encode()
+        i.send(size)
+        bytesToSend = "msgFromClient"
+        bytesToSend = bytesToSend.encode()
+        id = i.getpeername()
+        print(id)
+        udp.sendto(bytesToSend, id)
+        print(5)
+
 
 def kick(i):
     msg = "-exit-"
     msg = msg.encode()
     i.send(msg)
-    id = i.getpeername()[1]
+    id = i.getpeername()
     del names[id]
     inputs.remove(i)
     print(f"client {nickname} has left the chat, port {id} free now ")
@@ -99,7 +153,7 @@ def kick(i):
     i.close()
 
 def gentlyKick(i):
-    id = i.getpeername()[1]
+    id = i.getpeername()
     del names[id]
     inputs.remove(i)
     print(f"client {nickname} has left the chat, port {id} free now ")
@@ -114,11 +168,11 @@ while inputs:
             inputs.append(client)
             name = welcome(client)
             print("new user detected! " + name + " connected")
-            names[address[1]] = name
+            names[address] = name
             broadcast(name.encode() + f" entered the chat".encode(), [server, client])
 
         else:
-            id = i.getpeername()[1]
+            id = i.getpeername()
             nickname = names[id]
             try:
                 data = i.recv(buffer)
