@@ -1,17 +1,17 @@
 import socket
 import select
 import os
+from os import listdir
+from os.path import isfile, join
 
 server = socket.socket()
 port = 55000
 buffer = 1024
 udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-udp.bind(('', port))
 server.bind(('', port))
 server.listen(15)
 inputs = [server]
 names = {}
-files = ("mygif.gif", "text.txt", "photo.jpg")
 print("ready to serve...")
 
 def welcome(client):
@@ -56,6 +56,8 @@ def chatWith (msg, port):
             connection.send(msg)
 
 def filesList(i):
+    path = os.path.abspath("")
+    files = [file for file in listdir(path) if isfile(join(path, file))]
     msg = "list of available files:"
     msg = msg.encode()
     i.send(msg)
@@ -63,60 +65,9 @@ def filesList(i):
         file = (file + "\n").encode()
         i.send(file)
 
-# def download(i, file):
-#     if file not in files:
-#         msg = "no such a file in the server!"
-#         msg = msg.encode()
-#         i.send(msg)
-#         print("no such a file!")
-#     else:
-#         print(f"sending {file} to {nickname}")
-#         msg = "-sending-"
-#         msg = msg.encode()
-#         i.send(msg)
-#         msg = file + "-copy"
-#         msg = msg.encode()
-#         i.send(msg)
-#         size = os.path.getsize(file)
-#         i.send(str(size).encode())
-#         with open(file, 'rb') as fs:
-#             data = fs.read(buffer)
-#             i.send(data)
-#             sent = len(data)
-#             while sent < size:
-#                 data = fs.read(buffer)
-#                 i.send(data)
-#                 sent = sent + len(data)
-#         print("file sent!")
-
-
-# def download(i, file):
-#     if file not in files:
-#         msg = "no such a file in the server!"
-#         msg = msg.encode()
-#         i.send(msg)
-#         print("no such a file!")
-#     else:
-#         print(f"sending {file} to {nickname}")
-#         msg = "-sending-"
-#         msg = msg.encode()
-#         i.send(msg)
-#         msg = file + "-copy"
-#         msg = msg.encode()
-#         i.send(msg)
-#         size = os.path.getsize(file)
-#         i.send(str(size).encode())
-#         with open(file, 'rb') as fs:
-#             data = fs.read(buffer)
-#             udp.sendto(data, i)
-#             sent = len(data)
-#             while sent < size:
-#                 data = fs.read(buffer)
-#                 udp.sendto(data, i)
-#                 sent = sent + len(data)
-#         print("file sent!")
-
 def download(i, file):
+    path = os.path.abspath("")
+    files = [file for file in listdir(path) if isfile(join(path, file))]
     if file not in files:
         msg = "no such a file in the server!"
         msg = msg.encode()
@@ -136,8 +87,8 @@ def download(i, file):
         bytesToSend = "msgFromClient"
         bytesToSend = bytesToSend.encode()
         id = i.getpeername()
-        print(id)
-        udp.sendto(bytesToSend, id)
+        udpAdd = (id[0], id[1] + 1000)
+        udp.sendto(bytesToSend, udpAdd)
         print(5)
 
 
