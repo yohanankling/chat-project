@@ -14,22 +14,28 @@ print(ip)
 for i in range(14):
       try:
             s.bind(("", port))
-            udp.bind("", port)
+            udp.bind("", 56001)
             break
       except:
             port = port + 1
-s.connect((ip, 55000))
-print("hello " + name + "!")
-print("here is the commands manual : ")
-print('to send a message to everyone enter - "broadcast,text"')
-print('to send a message to a person enter - "person name,text"')
-print('to see who is online enter - "online"')
-print('to see the available online file list enter - "files"')
-print('to download a file from the server enter - "download,file_name.type"')
-print('to disconnect enter - "exit"')
+try:
+      s.connect((ip, 55000))
+      print("hello " + name + "!")
+      print("here is the commands manual : ")
+      print('to send a message to everyone enter - "broadcast,text"')
+      print('to send a message to a person enter - "person name,text"')
+      print('to see who is online enter - "online"')
+      print('to see the available online file list enter - "files"')
+      print('to download a file from the server enter - "download,file_name.type"')
+      print('to disconnect enter - "exit"')
+except:
+      print("cant connect to server")
 
 def send():
-      s.send(name.encode())
+      try:
+            s.send(name.encode())
+      except:
+            pass
       while True:
             s.send(input().encode())
 
@@ -80,8 +86,10 @@ t.start()
 def files():
       filename = s.recv(buffer).decode()
       size = s.recv(buffer).decode()
+      print(filename)
+      print(size)
       print(1)
-      msg = udp.recvfrom(buffer)
+      msg, address = udp.recvfrom(buffer)
       print(2)
       print(msg)
 
@@ -99,5 +107,5 @@ while True:
             else:
                   print(data)
       except:
-            pass
+            print(5555)
 # download,text.txt
