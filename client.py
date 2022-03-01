@@ -5,7 +5,7 @@ buffer = 1024
 ip = input("enter server IP: or press enter for locall ip")
 name = input("enter your nickname please:")
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 host_name = socket.gethostname()
 if ip =="":
       ip = socket.gethostbyname(host_name)
@@ -14,7 +14,7 @@ print(ip)
 for i in range(14):
       try:
             s.bind(("", port))
-            udp.bind("", 56001)
+            # udp.bind("", 55000)
             break
       except:
             port = port + 1
@@ -82,6 +82,20 @@ t.start()
 #                   recived = recived + len(data)
 #       fw.close()
 #       print("the file was successfully downloaded.")
+#
+
+
+
+
+# def files():
+#       filename = s.recv(buffer).decode()
+#       size = s.recv(buffer).decode()
+#       print(filename)
+#       print(size)
+#       print(1)
+#       msg, address = udp.recvfrom(buffer)
+#       print(2)
+#       print(msg)
 
 def files():
       filename = s.recv(buffer).decode()
@@ -89,8 +103,27 @@ def files():
       print(filename)
       print(size)
       print(1)
-      msg, address = udp.recvfrom(buffer)
-      print(2)
+
+      msgFromClient = "Hello UDP Server"
+
+      bytesToSend = str.encode(msgFromClient)
+
+      serverAddressPort = ("127.0.0.1", 20001)
+
+      bufferSize = 1024
+
+      # Create a UDP socket at client side
+
+      UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+
+      # Send to server using created UDP socket
+
+      UDPClientSocket.sendto(bytesToSend, serverAddressPort)
+
+      msgFromServer = UDPClientSocket.recvfrom(bufferSize)
+
+      msg = "Message from Server {}".format(msgFromServer[0])
+
       print(msg)
 
 
@@ -107,5 +140,10 @@ while True:
             else:
                   print(data)
       except:
-            print(5555)
+            print("cannot to connect the server, try different name, or running the server")
+            s.detach()
+            s.close()
+            os._exit(0)
 # download,text.txt
+
+#kill -9 $(ps -A | grep python | awk '{print $1}')
