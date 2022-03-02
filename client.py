@@ -1,11 +1,15 @@
+import tkinter
+from tkinter import messagebox
 import socket
 import threading
 import os
+
 buffer = 1024
 ip = input("enter server IP: or press enter for locall ip")
 name = input("enter your nickname please:")
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+tcp.setsockopt(socket.SOL_TCP, socket.TCP_QUICKACK, 0)
+tcp.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 host_name = socket.gethostname()
 if ip =="":
       ip = socket.gethostbyname(host_name)
@@ -13,137 +17,136 @@ port = 55001
 print(ip)
 for i in range(14):
       try:
-            s.bind(("", port))
-            # udp.bind("", 55000)
+            tcp.bind(("", port))
             break
       except:
             port = port + 1
 try:
-      s.connect((ip, 55000))
-      print("hello " + name + "!")
-      print("here is the commands manual : ")
-      print('to send a message to everyone enter - "broadcast,text"')
-      print('to send a message to a person enter - "person name,text"')
-      print('to see who is online enter - "online"')
-      print('to see the available online file list enter - "files"')
-      print('to download a file from the server enter - "download,file_name.type"')
-      print('to disconnect enter - "exit"')
+      tcp.connect((ip, 55000))
 except:
       print("cant connect to server")
 
-def send():
-      try:
-            s.send(name.encode())
-      except:
-            pass
-      while True:
-            s.send(input().encode())
-
-t = threading.Thread(target=send)
-t.start()
-
-#
-# def files():
-#       print("download request accepted")
-#       filename = s.recv(buffer).decode()
-#       size = s.recv(buffer).decode()
-#       size = 80
-#       print("starting downloading...")
-#       if os.path.exists(filename):
-#             os.remove(filename)
-#       with open(filename, 'wb') as fw:
-#             recived = 0
-#             print(1)
-#             while recived < size:
-#                   print(2)
-#                   data = s.recv(buffer)
-#                   fw.write(data)
-#                   recived = recived + len(data)
-#       fw.close()
-#       print("the file was successfully downloaded.")
-
-
-
-
-
-# def files():
-#       print("download request accepted")
-#       filename = s.recv(buffer).decode()
-#       # size = s.recv(buffer).decode()
-#       size = 80
-#       print("starting downloading...")
-#       if os.path.exists(filename):
-#             os.remove(filename)
-#       with open(filename, 'wb') as fw:
-#             recived = 0
-#             while recived < size:
-#                   data = udp.recvfrom(buffer)
-#                   fw.write(data)
-#                   recived = recived + len(data)
-#       fw.close()
-#       print("the file was successfully downloaded.")
-#
-
-
-
-
-# def files():
-#       filename = s.recv(buffer).decode()
-#       size = s.recv(buffer).decode()
-#       print(filename)
-#       print(size)
-#       print(1)
-#       msg, address = udp.recvfrom(buffer)
-#       print(2)
-#       print(msg)
-
-def files():
-      filename = s.recv(buffer).decode()
-      size = s.recv(buffer).decode()
-      print(filename)
-      print(size)
-      print(1)
-
-      msgFromClient = "Hello UDP Server"
-
-      bytesToSend = str.encode(msgFromClient)
-
-      serverAddressPort = ("127.0.0.1", 20001)
-
-      bufferSize = 1024
-
-      # Create a UDP socket at client side
-
+def udp():
+      print("udpppppppp")
       UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-
-      # Send to server using created UDP socket
-
-      UDPClientSocket.sendto(bytesToSend, serverAddressPort)
-
-      msgFromServer = UDPClientSocket.recvfrom(bufferSize)
-
+      address = (ip, port + 1000)
+      UDPClientSocket.bind(address)
+      msgFromServer = UDPClientSocket.recvfrom(buffer)
       msg = "Message from Server {}".format(msgFromServer[0])
-
       print(msg)
 
+def files():
+      data = tcp.recv(buffer).decode()
+      data = data.split(',')
+      filename = data[0]
+      size = data[1]
+      print(filename)
+      print(1)
+      print(size)
+      udpThread.start()
+      udpThread.join()
 
-while True:
-      try:
-            data = s.recv(buffer).decode()
-            if data == "-exit-":
-                  s.detach()
-                  s.close()
-                  print("you successfully disconnected from the server, bye bye " + name)
+def recive():
+      while True:
+            try:
+                  data = tcp.recv(buffer).decode()
+                  if data == "-exit-":
+                        tcp.detach()
+                        tcp.close()
+                        print("you successfully disconnected from the server, bye bye " + name)
+                        os._exit(0)
+                  elif data == "-sending-":
+                        files()
+                  else:
+                        try:
+                              frame.insert(tkinter.END, data)
+                        except:
+                              pass
+            except:
+                  print("cannot to connect the server, try different name, or running the server")
+                  tcp.detach()
+                  tcp.close()
                   os._exit(0)
-            elif data == "-sending-":
-                  files()
-            else:
-                  print(data)
-      except:
-            print("cannot to connect the server, try different name, or running the server")
-            s.detach()
-            s.close()
-            os._exit(0)
-# download,text.txt
 
-#kill -9 $(ps -A | grep python | awk '{print $1}')
+def online():
+      tcp.send("online".encode())
+      message.set("")
+
+def files():
+      tcp.send("files".encode())
+      message.set("")
+
+def disconnect():
+      tcp.send("exit".encode())
+      message.set("")
+
+def exit():
+      if messagebox.askyesno("Exit", "Do you want to quit the application?"):
+            gui.destroy()
+            tcp.send("exit".encode())
+      else:
+            msg = "lucky for us..."
+            frame.insert(tkinter.END, msg)
+
+def send2():
+      text = message.get()
+      tcp.send(text.encode())
+      try:
+            to, msg = text.split(',', 1)
+            data = str(name + " >>> " + to + ":  " + msg)
+            frame.insert(tkinter.END, data)
+      except:
+            pass
+      message.set("")
+
+try:
+      tcp.send(name.encode())
+except:
+      pass
+
+recive = threading.Thread(target=recive)
+udpThread = threading.Thread(target=udp)
+recive.start()
+
+#GUi
+gui = tkinter.Tk()
+gui.title("icq2")
+gui.resizable(False, False)
+gui['bg'] = 'green'
+window = tkinter.Frame(gui)
+scrollbar = tkinter.Scrollbar(window)
+frame = tkinter.Listbox(window, height=20, width=50, yscrollcommand=scrollbar.set)
+frame.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
+scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+frame.pack()
+window.pack()
+menu = tkinter.Label(gui, text="menu:")
+menu.pack()
+send = tkinter.Label(gui, text="enter your message:")
+send.pack()
+message = tkinter.StringVar()
+message.set("")
+text = tkinter.Entry(gui, textvariable=message, foreground="Black")
+text.bind(send2())
+text.pack()
+send = tkinter.Button(gui, text="Send", command=send2)
+send.pack(side=tkinter.LEFT)
+online = tkinter.Button(gui, text="online list", command=online)
+online.pack(side=tkinter.RIGHT)
+files = tkinter.Button(gui, text="files list", command=files)
+files.pack(side=tkinter.RIGHT)
+disconnect = tkinter.Button(gui, text="disconnect", command=disconnect)
+disconnect.pack(side=tkinter.LEFT)
+gui.protocol("WM_DELETE_WINDOW", exit)
+
+msg = "hello " + name + "!"
+frame.insert(tkinter.END, msg)
+msg = "here is the commands manual : "
+frame.insert(tkinter.END, msg)
+msg = 'to send a message to everyone enter - "broadcast,text"'
+frame.insert(tkinter.END, msg)
+msg = 'to send a message to a person enter - "person name,text"'
+frame.insert(tkinter.END, msg)
+msg = 'to download a file from the server enter - "download,file_name.type"'
+frame.insert(tkinter.END, msg)
+tkinter.mainloop()
