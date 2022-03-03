@@ -1,20 +1,22 @@
 import tkinter
+from time import sleep
 from tkinter import messagebox
 import socket
 import threading
 import os
 
+# starting to setting the useful variable
 buffer = 1024
 ip = input("enter server IP: or press enter for locall ip")
 name = input("enter your nickname please:")
 tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# to send tcp immideatlly (disable Nagle's algorithm) - more transferring but more convenient to track packet
 tcp.setsockopt(socket.SOL_TCP, socket.TCP_QUICKACK, 0)
 tcp.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 host_name = socket.gethostname()
 if ip =="":
       ip = socket.gethostbyname(host_name)
 port = 55001
-print(ip)
 for i in range(14):
       try:
             tcp.bind(("", port))
@@ -28,10 +30,11 @@ except:
 
 def udp():
       print("udpppppppp")
-      UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-      address = (ip, port + 1000)
-      UDPClientSocket.bind(address)
-      msgFromServer = UDPClientSocket.recvfrom(buffer)
+      UDP = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+      address = ('127.0.0.1', port + 1000)
+      UDP.bind(address)
+      print(address)
+      msgFromServer = UDP.recvfrom(buffer)
       msg = "Message from Server {}".format(msgFromServer[0])
       print(msg)
 
@@ -40,11 +43,10 @@ def files():
       data = data.split(',')
       filename = data[0]
       size = data[1]
-      print(filename)
-      print(1)
-      print(size)
+      frame.insert(tkinter.END, "filename :" +filename)
+      frame.insert(tkinter.END, "\n")
+      frame.insert(tkinter.END, filename + " size : " + size)
       udpThread.start()
-      udpThread.join()
 
 def recive():
       while True:
@@ -58,10 +60,7 @@ def recive():
                   elif data == "-sending-":
                         files()
                   else:
-                        try:
-                              frame.insert(tkinter.END, data)
-                        except:
-                              pass
+                        frame.insert(tkinter.END, data)
             except:
                   print("cannot to connect the server, try different name, or running the server")
                   tcp.detach()
@@ -72,7 +71,7 @@ def online():
       tcp.send("online".encode())
       message.set("")
 
-def files():
+def filesList():
       tcp.send("files".encode())
       message.set("")
 
@@ -82,8 +81,9 @@ def disconnect():
 
 def exit():
       if messagebox.askyesno("Exit", "Do you want to quit the application?"):
-            gui.destroy()
             tcp.send("exit".encode())
+            sleep(0.1)
+            gui.destroy()
       else:
             msg = "lucky for us..."
             frame.insert(tkinter.END, msg)
@@ -104,15 +104,11 @@ try:
 except:
       pass
 
-recive = threading.Thread(target=recive)
-udpThread = threading.Thread(target=udp)
-recive.start()
-
-#GUi
+# GUi
 gui = tkinter.Tk()
 gui.title("icq2")
 gui.resizable(False, False)
-gui['bg'] = 'green'
+gui['bg'] = 'cyan'
 window = tkinter.Frame(gui)
 scrollbar = tkinter.Scrollbar(window)
 frame = tkinter.Listbox(window, height=20, width=50, yscrollcommand=scrollbar.set)
@@ -133,12 +129,13 @@ send = tkinter.Button(gui, text="Send", command=send2)
 send.pack(side=tkinter.LEFT)
 online = tkinter.Button(gui, text="online list", command=online)
 online.pack(side=tkinter.RIGHT)
-files = tkinter.Button(gui, text="files list", command=files)
-files.pack(side=tkinter.RIGHT)
+filesList = tkinter.Button(gui, text="files list", command=filesList)
+filesList.pack(side=tkinter.RIGHT)
 disconnect = tkinter.Button(gui, text="disconnect", command=disconnect)
 disconnect.pack(side=tkinter.LEFT)
 gui.protocol("WM_DELETE_WINDOW", exit)
 
+# some welcome messgae
 msg = "hello " + name + "!"
 frame.insert(tkinter.END, msg)
 msg = "here is the commands manual : "
@@ -149,4 +146,9 @@ msg = 'to send a message to a person enter - "person name,text"'
 frame.insert(tkinter.END, msg)
 msg = 'to download a file from the server enter - "download,file_name.type"'
 frame.insert(tkinter.END, msg)
+
+# thread to run recive and send in parallel
+recive = threading.Thread(target=recive)
+udpThread = threading.Thread(target=udp)
+recive.start()
 tkinter.mainloop()
