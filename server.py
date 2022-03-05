@@ -8,7 +8,7 @@ from time import sleep
 # create tcp socket with ignore delay for fill buffers
 tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 tcp.setblocking(True)
-tcp.setsockopt(socket.SOL_TCP, socket.TCP_QUICKACK, 1)
+#tcp.setsockopt(socket.SOL_TCP, socket.TCP_QUICKACK, 1)
 tcp.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
 # useful variable
