@@ -3,14 +3,15 @@ import os
 from os import listdir
 from os.path import isfile, join
 import threading
-from threading import Thread
 from time import sleep
 
+# create tcp socket with ignore delay for fill buffers
 tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 tcp.setblocking(True)
 tcp.setsockopt(socket.SOL_TCP, socket.TCP_QUICKACK, 1)
 tcp.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
+# useful variable
 port = 55000
 buffer = 1024
 tcp.bind(('', port))
@@ -18,17 +19,23 @@ tcp.listen(15)
 inputs = {}
 names = {}
 print("ready to serve...")
+# global answer
+# answer = 0
 
+# accept new connections
 def accept():
     while True:
         client, address = tcp.accept()
         inputs[client] = address
         name = welcome(client)
+        # check if there is already that name
         if name in names.values():
             msg = "importent! this is a message from the server - your name is already taken, please try to connect again with a different name, the taken names is all the online mamber below:"
             msg = msg.encode()
             client.send(msg)
+            # send taken names
             onlineList(client)
+            # kick him
             gentlyKick(client, 1, name)
 
             continue
@@ -42,27 +49,30 @@ def recive(client, name):
     while True:
         message = "null"
         try:
+            # get adress details
             id = client.getpeername()
             nickname = names[id]
             try:
+                # try because maybe his dissconected...
                 data = client.recv(buffer)
                 data = data.decode('UTF-8')
                 try:
+                    # check if that a 2 part message
                     command, message = data.split(',', 1)
                     data = str(nickname + " >>> " + message)
                 except:
                     command = data
+                # recat by command
                 if command == 'broadcast':
                     broadcast(data.encode(), [tcp, client])
                 elif command == "online":
                     onlineList(client)
                 elif command == "files":
                     filesList(client)
-
-                elif command == "d":
-                    down = threading.Thread(target=download, args=(client, "text.txt", id, name))
-                    down.start()
-
+                # elif command == "555":
+                #      answer = 2
+                # elif command == "666":
+                #      answer = 1
                 elif command == "download" and message != "null":
                     down = threading.Thread(target=download, args=(client, message, id, name))
                     down.start()
@@ -84,6 +94,7 @@ def recive(client, name):
         except:
             pass
 
+# broadcast to all new connection and welcome the new client
 def welcome(client):
     name = client.recv(buffer)
     name = name.decode('UTF-8')
@@ -94,6 +105,7 @@ def welcome(client):
         onlineList(client)
     return name
 
+# send the list of clients to requested client
 def onlineList(client):
     msg = "list of who is online:\n"
     msg = msg.encode()
@@ -103,20 +115,23 @@ def onlineList(client):
         nickname = (nickname[1] + "\n").encode()
         client.send(nickname)
 
+# check if there is client with that name
 def getClient(name):
     for key, value in names.items():
         if name == value:
             return key
     return "exep"
 
-def broadcast(msg, non_receptors):
+#broadcast to all
+def broadcast(msg, notClients):
     for connection in inputs:
-        if connection not in non_receptors:
+        if connection not in notClients:
             try:
                 connection.send(msg)
             except:
                 pass
 
+# to chat in private
 def chatWith (port, msg):
     print(port)
     for connection in inputs:
@@ -131,6 +146,7 @@ def chatWith (port, msg):
             connection.send(msg)
             break
 
+# send the file list in the folder
 def filesList(client):
     path = os.path.abspath("")
     files = [file for file in listdir(path) if isfile(join(path, file))]
@@ -141,25 +157,56 @@ def filesList(client):
         file = (file + "\n").encode()
         client.send(file)
 
+# split the file to packages
+def splitToPacket(file):
+    packets = []
+    with open(file, "rb") as f:
+        package = f.read(buffer - 256)
+        while (package):
+            packets.append(package)
+            package = f.read(buffer - 256)
+        return packets
 
-def udp(file, id, size):
-    print("udppppppppp")
-    UDP = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+# udp connection
+def udp(file, id):
+    packets = splitToPacket(file)
+    UDPSEND = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+    UDPRECV = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+    UDPRECV.settimeout(3)
+    UDPSEND.settimeout(3)
+    UDPSEND.bind(('', 56000))
+    UDPRECV.bind(('', 57000))
     address = ('127.0.0.1', id[1] + 1000)
-    with open(file, 'rb') as f:
-        buffer = f.read(256)
-        UDP.sendto(buffer)
-        
-
-    msgFromServer = "Hello UDP Client"
-    bytesToSend = str.encode(msgFromServer)
-
-    print(address)
+    ack = 0
+    print("udp start")
+    # half = int(len(packets))
+    flag = 0
+    #seperate recive and send UDP socket
+    # while didnt send all packages
+    while ack < len(packets):
+            msg = (packets[ack].decode() + "," + str(ack)).encode()
+            UDPSEND.sendto(msg, address)
+            data = UDPRECV.recvfrom(buffer)
+            temp = int(data[0].decode())
+            if temp != -2:
+                ack += 1
+                # tried to stop, didnt hespaknu all so in comment
+            # if half < ack:
+            #     tcp.send("continue?")
+            #     cont.start()
+            #     cont.join()
+            #     if answer == 1:
+            #         break
+        # if all acks are fine
+    msg = ("-1" + "," + str(-1)).encode()
+    # close the sending seqtion
     while True:
-        UDPServerSocket.sendto(bytesToSend, address)
+        UDPSEND.sendto(msg, address)
+        data = UDPRECV.recvfrom(buffer)
+        if data[0].decode() == -1:
+            break
 
-
-
+#all previus data before send the file on UDP
 def download(client, file, id, name):
     path = os.path.abspath("")
     files = [file for file in listdir(path) if isfile(join(path, file))]
@@ -179,9 +226,18 @@ def download(client, file, id, name):
         msg = "serverFile-" + file + "," + size
         msg = msg.encode()
         client.send(msg)
-        udp(file, id, size)
+        udp(file, id)
+
+# def cont():
+#     while answer == 0:
+#         if answer == 2:
+#             answer = 0
+#             break
+#         elif answer == 1:
+#             pass
 
 
+#kick method
 def kick(id, name, client):
     msg = "-exit-"
     msg = msg.encode()
@@ -220,6 +276,7 @@ def gentlyKick(client, flag, name):
 
 
 start = threading.Thread(target=accept())
+# cont = threading.Thread(target=cont())
 start.start()
 start.join()
 tcp.close()
