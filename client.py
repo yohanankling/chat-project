@@ -12,7 +12,7 @@ ip = input("enter server IP: or press enter for locall ip")
 name = input("enter your nickname please:")
 tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # to send tcp immideatlly (disable Nagle's algorithm) - more transferring but more convenient to track packet
-tcp.setsockopt(socket.SOL_TCP, socket.TCP_QUICKACK, 0)
+#tcp.setsockopt(socket.SOL_TCP, socket.TCP_QUICKACK, 0)
 tcp.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 host_name = socket.gethostname()
 if ip == "":
